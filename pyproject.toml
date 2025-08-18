@@ -1,0 +1,75 @@
+[project]
+name = "rl-market-maker"
+version = "0.1.0"
+description = "PPO market maker trained in a limit order book simulator with queue position and latency, compared against Avellaneda-Stoikov"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Paul Davis" }]
+keywords = ["reinforcement-learning", "ppo", "market-making", "avellaneda-stoikov", "order-book"]
+dependencies = [
+    "gymnasium>=1.0,<2",
+    "lob",
+    "matplotlib>=3.9",
+    "numpy>=2.0",
+    "torch>=2.5",
+]
+
+[project.scripts]
+rlmm = "rlmm.cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pytest>=8",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rlmm"]
+
+[tool.uv.sources]
+# The simulator. Built from the sibling checkout with maturin on `uv sync`.
+# To use the published repo instead, swap this line for:
+#   lob = { git = "https://github.com/PDiTO/lob", rev = "875f4b361614b20cbcad75cddb057dad2c52a6e9" }
+lob = { path = "../lob", package = true }
+# CPU-only torch wheels on Linux (CI); macOS uses the default PyPI wheels.
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "NPY"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rlmm"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["gymnasium.*"]
+follow_untyped_imports = true
+
+[tool.uv]
+# Keep dependency resolution within the original development period.
+exclude-newer = "2025-08-18T00:00:00Z"
