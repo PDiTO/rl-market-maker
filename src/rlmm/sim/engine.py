@@ -466,6 +466,4 @@ class ReplayEngine:
         if o is None:
             return None
         side = self.book.l3()["bids" if o["side"] == "bid" else "asks"]
-        return sum(
-            int(r["qty"]) for r in side if r["price"] == o["price"] and r["seq"] < o["seq"]
-        )
+        return sum(int(r["qty"]) for r in side if r["price"] == o["price"] and r["seq"] < o["seq"])
