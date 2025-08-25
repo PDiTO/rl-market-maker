@@ -65,6 +65,8 @@ python_version = "3.12"
 strict = true
 files = ["src", "tests"]
 warn_unreachable = true
+# torch.distributions and Tensor.backward are not annotated.
+untyped_calls_exclude = ["torch"]
 
 [[tool.mypy.overrides]]
 module = ["gymnasium.*"]
