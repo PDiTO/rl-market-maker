@@ -22,6 +22,7 @@ from rlmm.sim.accounting import money_to_ticks
 from rlmm.sim.engine import Fill, ReplayEngine, Snapshot
 from rlmm.sim.orders import AgentCtx, sync_quotes
 
+NO_QUOTE = 99
 LEVELS = ("off", "improve", "join", "back1", "back2")
 """Per-side action: no quote, one tick inside the touch (if the spread allows),
 at the touch, or one or two ticks behind it."""
@@ -53,7 +54,12 @@ class EpisodeTrace:
     """Mark-to-market PnL at mid, ticks x lots."""
     reward: list[float] = field(default_factory=list)
     bid_level: list[int] = field(default_factory=list)
+    """Action index per step, or -1 when quoting by price."""
     ask_level: list[int] = field(default_factory=list)
+    bid_offset: list[int] = field(default_factory=list)
+    """Ticks behind the visible best bid actually quoted (negative inside the
+    spread), or ``NO_QUOTE``, after the position limit."""
+    ask_offset: list[int] = field(default_factory=list)
     liquidation_cost: float = 0.0
     fills: list[Fill] = field(default_factory=list)
     mid_ts: list[int] = field(default_factory=list)
@@ -238,6 +244,14 @@ class LobMarketMakingEnv(gym.Env[np.ndarray, np.ndarray]):
             bid = None
         if ask is not None and ctx.position - size < -cfg.max_position:
             ask = None
+        if self.record:
+            bb, ba = ctx.best_bid(), ctx.best_ask()
+            self.trace.bid_offset.append(
+                bb[0] - bid if bid is not None and bb is not None else NO_QUOTE
+            )
+            self.trace.ask_offset.append(
+                ask - ba[0] if ask is not None and ba is not None else NO_QUOTE
+            )
         sync_quotes(ctx, bid, ask, size)
         ctx.flush(engine)
 
