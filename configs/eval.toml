@@ -1,0 +1,42 @@
+# Held-out evaluation, robustness sweep and figures.
+#   rlmm calibrate --config configs/eval.toml
+#   rlmm eval      --config configs/eval.toml
+#   rlmm plot      --config configs/eval.toml
+# [env] is the evaluation market. PPO checkpoints keep their own training settings
+# (step, horizon, quote size, reward) and get this market and latency swapped in.
+
+[env]
+step_ms = 100.0
+horizon_s = 60.0
+warmup_s = 5.0
+quote_size = 5
+max_position = 50
+
+[env.market]
+volatility = 2.0
+informed = 0.5
+
+[env.sim]
+order_latency_ns = 50_000
+market_data_latency_ns = 50_000
+maker_fee = -0.1
+taker_fee = 0.3
+
+[env.reward]
+inventory_penalty = 0.005
+dampening = 0.0
+terminal_liquidation = true
+
+[eval]
+episodes = 500
+robustness_episodes = 150
+calibration = "results/calibration.json"
+out_dir = "results"
+latency_ns = [0, 50_000, 1_000_000, 5_000_000, 20_000_000]
+volatility = [1.0, 2.0, 3.0, 4.0]
+informed = [0.3, 0.5, 0.7]
+
+[eval.policies]
+ppo_seed1 = "runs/ppo/seed1/final.pt"
+ppo_seed2 = "runs/ppo/seed2/final.pt"
+ppo_seed3 = "runs/ppo/seed3/final.pt"
