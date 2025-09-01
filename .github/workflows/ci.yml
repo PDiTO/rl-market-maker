@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ruff, mypy, pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rl-market-maker
+    steps:
+      # lob is a uv path dependency at ../lob, so check both repos out side by side.
+      - uses: actions/checkout@v4
+        with:
+          path: rl-market-maker
+      - uses: actions/checkout@v4
+        with:
+          repository: PDiTO/lob
+          ref: 875f4b361614b20cbcad75cddb057dad2c52a6e9
+          path: lob
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lob
+      - uses: astral-sh/setup-uv@v6
+        with:
+          cache-dependency-glob: rl-market-maker/uv.lock
+
+      - name: install (builds lob with maturin)
+        run: uv sync --locked
+
+      - name: ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: mypy
+        run: uv run mypy
+
+      - name: pytest
+        run: uv run pytest

@@ -34,8 +34,10 @@ build-backend = "hatchling.build"
 packages = ["src/rlmm"]
 
 [tool.uv.sources]
-# The simulator. Built from the sibling checkout with maturin on `uv sync`.
-# To use the published repo instead, swap this line for:
+# The simulator, built from the sibling checkout with maturin on `uv sync`.
+# `package = true` is needed because lob's own pyproject marks it as a virtual
+# project for its dev workflow. To use the published repo instead, swap the
+# line for:
 #   lob = { git = "https://github.com/PDiTO/lob", rev = "875f4b361614b20cbcad75cddb057dad2c52a6e9" }
 lob = { path = "../lob", package = true }
 # CPU-only torch wheels on Linux (CI); macOS uses the default PyPI wheels.
