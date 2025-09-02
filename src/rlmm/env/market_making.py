@@ -127,7 +127,9 @@ class LobMarketMakingEnv(gym.Env[np.ndarray, np.ndarray]):
         self.record = record
         self.action_space = spaces.MultiDiscrete([len(LEVELS), len(LEVELS)])
         self.observation_space = spaces.Box(OBS_LOW, OBS_HIGH, dtype=np.float32)
-        self._features = FeatureBuilder(self.cfg.quote_size, self.cfg.max_position)
+        self._features = FeatureBuilder(
+            self.cfg.quote_size, self.cfg.max_position, self.cfg.hide_features
+        )
         self._engine: ReplayEngine | None = None
         self._ctx = AgentCtx()
         self._k = 0

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -25,6 +26,7 @@ from rlmm.evaluation.stats import summarize
 from rlmm.ppo.agent import Agent
 
 ROBUSTNESS_SEED_OFFSET = 1_000_000
+Overrides = dict[str, dict[str, Any]]
 
 
 def load_calibration(path: str | Path) -> Calibration:
@@ -46,9 +48,9 @@ def load_policies(run: RunConfig) -> list[tuple[Policy, EnvConfig]]:
     return out
 
 
-def regimes(run: RunConfig) -> list[tuple[str, str, dict[str, dict[str, float]]]]:
+def regimes(run: RunConfig) -> list[tuple[str, str, Overrides]]:
     ev = run.eval
-    out: list[tuple[str, str, dict[str, dict[str, float]]]] = []
+    out: list[tuple[str, str, Overrides]] = []
     for lat in ev.latency_ns:
         label = f"{lat / 1e6:g} ms"
         out.append(
@@ -58,6 +60,15 @@ def regimes(run: RunConfig) -> list[tuple[str, str, dict[str, dict[str, float]]]
         out.append(("volatility", f"{v:g}", {"market": {"volatility": v}}))
     for i in ev.informed:
         out.append(("informed", f"{i:g}", {"market": {"informed": i}}))
+    out.append(("fair_value", "random walk", {}))
+    for k in ev.mean_reversion:
+        out.append(
+            (
+                "fair_value",
+                f"OU {k:g}/s",
+                {"market": {"fair_value": "mean_reverting", "mean_reversion": k}},
+            )
+        )
     return out
 
 
@@ -166,7 +177,8 @@ def run_robustness(run: RunConfig, log: bool = True) -> Results:
         sections.append(f"**{group}**\n\n" + markdown_table([group, *names], table))
     md = (
         f"Mean PnL [95% CI] over {len(seeds)} markets per cell. Training conditions are "
-        "50 us latency each way, volatility 2, informed share 0.5.\n\n" + "\n\n".join(sections)
+        "0.05 ms latency each way, volatility 2, informed share 0.5, random-walk fair "
+        "value.\n\n" + "\n\n".join(sections)
     )
     (out / "robustness.md").write_text(md + "\n")
     if log:

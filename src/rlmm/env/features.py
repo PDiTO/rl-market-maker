@@ -16,6 +16,18 @@ import numpy as np
 from rlmm.sim.engine import OwnQueue, Snapshot
 from rlmm.sim.orders import AgentCtx
 
+# Features that say something about where the price is going next, as opposed to
+# the agent's own state. The ablation run hides these.
+DIRECTIONAL = (
+    "imbalance_l1",
+    "imbalance_l5",
+    "micro_minus_mid",
+    "ret_1",
+    "ret_10",
+    "ret_50",
+    "trade_imbalance",
+)
+
 # name, low, high
 FEATURES: tuple[tuple[str, float, float], ...] = (
     ("inventory", -2.0, 2.0),  # known position / max_position
@@ -69,9 +81,13 @@ class _Side:
 class FeatureBuilder:
     """Keeps the short history the observation needs and builds the vector."""
 
-    def __init__(self, quote_size: int, max_position: int) -> None:
+    def __init__(self, quote_size: int, max_position: int, hide: tuple[str, ...] = ()) -> None:
+        unknown = set(hide) - set(FEATURE_NAMES)
+        if unknown:
+            raise ValueError(f"unknown features: {sorted(unknown)}")
         self.quote_size = quote_size
         self.max_position = max_position
+        self._hide = [_IDX[h] for h in hide]
         self.mids: list[float] = []
         self.var = 0.0
 
@@ -152,4 +168,5 @@ class FeatureBuilder:
             x[_IDX[f"{prefix}_qty"]] = side.qty
         x[_IDX["bid_filled"]] = bought / self.quote_size
         x[_IDX["ask_filled"]] = sold / self.quote_size
+        x[self._hide] = 0.0
         return np.clip(x, OBS_LOW, OBS_HIGH).astype(np.float32)

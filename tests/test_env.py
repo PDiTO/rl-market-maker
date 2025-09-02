@@ -153,3 +153,16 @@ def test_liquidation_cost_walks_the_book() -> None:
     # buy 6: 5 at 1 tick, 1 beyond the visible book at 2 ticks
     assert liquidation_cost(book, -6, 0.0) == pytest.approx(5 + 2)
     assert liquidation_cost(book, 0, 0.3) == 0.0
+
+
+def test_hidden_features_are_zeroed() -> None:
+    from rlmm.env.features import DIRECTIONAL, FEATURE_NAMES
+
+    cfg = SHORT.replace(hide_features=DIRECTIONAL)
+    obs, _, _ = rollout(LobMarketMakingEnv(cfg), 4)
+    idx = [FEATURE_NAMES.index(f) for f in DIRECTIONAL]
+    full, _, _ = rollout(LobMarketMakingEnv(SHORT), 4)
+    assert all(np.all(o[idx] == 0.0) for o in obs)
+    assert any(np.any(o[idx] != 0.0) for o in full)
+    with pytest.raises(ValueError):
+        LobMarketMakingEnv(SHORT.replace(hide_features=("nope",)))

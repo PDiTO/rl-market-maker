@@ -234,6 +234,10 @@ def run_calibration(
     families: dict[str, tuple[Callable[[float], Quoter], Sequence[float]]] = {
         "symmetric": (lambda o: SymmetricQuoter(int(o)), SYMMETRIC_OFFSET_GRID),
         "linear_skew": (lambda kap: LinearSkewQuoter(kap), SKEW_KAPPA_GRID),
+        "microprice_skew": (
+            lambda kap: LinearSkewQuoter(kap, reference="microprice", name="microprice_skew"),
+            SKEW_KAPPA_GRID,
+        ),
         "avellaneda_stoikov": (
             lambda g: AvellanedaStoikov(ASParams(g, sigma, k)),
             AS_GAMMA_GRID,
@@ -261,7 +265,7 @@ def run_calibration(
 
 
 def baselines_from(cal: Calibration) -> list[Quoter]:
-    """The four tuned baselines."""
+    """The tuned baselines."""
     from rlmm.baselines.avellaneda_stoikov import (
         ASParams,
         AvellanedaStoikov,
@@ -273,6 +277,7 @@ def baselines_from(cal: Calibration) -> list[Quoter]:
     return [
         SymmetricQuoter(int(c["symmetric"])),
         LinearSkewQuoter(c["linear_skew"]),
+        LinearSkewQuoter(c["microprice_skew"], reference="microprice", name="microprice_skew"),
         AvellanedaStoikov(ASParams(c["avellaneda_stoikov"], cal.sigma, cal.k)),
         GueantLehalleFernandezTapia(ASParams(c["as_stationary"], cal.sigma, cal.k), cal.A),
     ]

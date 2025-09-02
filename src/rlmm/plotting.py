@@ -265,6 +265,7 @@ def robustness(robustness_csv: Path, path: Path) -> None:
         "latency": "Latency each way (trained at 0.05 ms)",
         "volatility": "Fair-value volatility (trained at 2)",
         "informed": "Informed share of market orders (trained at 0.5)",
+        "fair_value": "Fair-value process (trained on random walk)",
     }
     _style()
     fig, axes = plt.subplots(1, len(groups), figsize=(4.2 * len(groups), 4), sharey=False)

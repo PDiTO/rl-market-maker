@@ -30,20 +30,33 @@ class LinearSkewQuoter:
 
     With ``half_spread = 0.5`` and no inventory it joins the touch. Long inventory
     lowers both quotes, so the bid backs off and the ask gets more aggressive.
+
+    ``reference="microprice"`` centres on the size-weighted microprice instead of the
+    mid, which leans the quotes toward the side of the book that is about to give way.
     """
 
-    def __init__(self, kappa: float, half_spread: float = 0.5, name: str = "linear_skew") -> None:
+    def __init__(
+        self,
+        kappa: float,
+        half_spread: float = 0.5,
+        reference: str = "mid",
+        name: str = "linear_skew",
+    ) -> None:
+        if reference not in ("mid", "microprice"):
+            raise ValueError("reference must be 'mid' or 'microprice'")
         self.kappa = kappa
         self.half_spread = half_spread
+        self.reference = reference
         self.name = name
 
     def reset(self) -> None:
         pass
 
     def quote(self, view: MarketView) -> tuple[int | None, int | None]:
-        if view.best_bid is None or view.best_ask is None or view.mid is None:
+        base = view.microprice if self.reference == "microprice" else view.mid
+        if view.best_bid is None or view.best_ask is None or base is None:
             return None, None
-        ref = view.mid - self.kappa * view.position
+        ref = base - self.kappa * view.position
         bid = math.floor(ref - self.half_spread + 1e-9)
         ask = math.ceil(ref + self.half_spread - 1e-9)
         return min(bid, view.best_ask[0] - 1), max(ask, view.best_bid[0] + 1)

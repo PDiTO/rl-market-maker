@@ -34,6 +34,8 @@ class EvalSettings:
     latency_ns: tuple[int, ...] = (0, 50_000, 1_000_000, 5_000_000, 20_000_000)
     volatility: tuple[float, ...] = (1.0, 2.0, 3.0, 4.0)
     informed: tuple[float, ...] = (0.3, 0.5, 0.7)
+    mean_reversion: tuple[float, ...] = (0.5,)
+    """Speeds for an extra regime where fair value is mean-reverting, per second."""
 
 
 @dataclass(frozen=True)

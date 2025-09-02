@@ -69,6 +69,8 @@ class EnvConfig:
     quote_size: int = 5
     max_position: int = 50
     """Hard limit. A side that would take the known position past it is not quoted."""
+    hide_features: tuple[str, ...] = ()
+    """Observation features to zero out, for ablations. The vector keeps its shape."""
 
     @property
     def step_ns(self) -> int:
@@ -94,6 +96,7 @@ class EnvConfig:
             "warmup_s": self.warmup_s,
             "quote_size": self.quote_size,
             "max_position": self.max_position,
+            "hide_features": self.hide_features,
         }
         for k, v in changes.items():
             if k not in d:
@@ -105,6 +108,8 @@ class EnvConfig:
                     raise KeyError(f"unknown {k} settings: {sorted(unknown)}")
                 cur.update(v)
                 v = type(d[k])(**cur)
+            if k == "hide_features":
+                v = tuple(v)
             d[k] = v
         return EnvConfig(**d)
 
