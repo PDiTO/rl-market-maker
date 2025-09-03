@@ -1,4 +1,4 @@
-"""``rlmm eval``: the held-out comparison and the robustness sweep."""
+"""``rlmm eval``: the held-out comparison and the out-of-regime stress tests."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from rlmm.evaluation.runner import AgentPolicy, Job, Policy, QuoterPolicy, eval_
 from rlmm.evaluation.stats import summarize
 from rlmm.ppo.agent import Agent
 
-ROBUSTNESS_SEED_OFFSET = 1_000_000
+STRESS_SEED_OFFSET = 1_000_000
 Overrides = dict[str, dict[str, Any]]
 
 
@@ -124,9 +124,9 @@ def run_main(run: RunConfig, log: bool = True) -> Results:
     return results
 
 
-def run_robustness(run: RunConfig, log: bool = True) -> Results:
+def run_stress(run: RunConfig, log: bool = True) -> Results:
     policies = load_policies(run)
-    seeds = tuple(eval_seeds(run.eval.robustness_episodes, offset=ROBUSTNESS_SEED_OFFSET))
+    seeds = tuple(eval_seeds(run.eval.stress_episodes, offset=STRESS_SEED_OFFSET))
     jobs = []
     for group, label, overrides in regimes(run):
         for p, cfg in policies:
@@ -157,7 +157,7 @@ def run_robustness(run: RunConfig, log: bool = True) -> Results:
             }
         )
     out = Path(run.eval.out_dir)
-    write_csv(out / "robustness.csv", rows)
+    write_csv(out / "stress.csv", rows)
 
     names = [p.name for p, _ in policies]
     sections = []
@@ -180,7 +180,7 @@ def run_robustness(run: RunConfig, log: bool = True) -> Results:
         "0.05 ms latency each way, volatility 2, informed share 0.5, random-walk fair "
         "value.\n\n" + "\n\n".join(sections)
     )
-    (out / "robustness.md").write_text(md + "\n")
+    (out / "stress.md").write_text(md + "\n")
     if log:
         print(md)
     return results

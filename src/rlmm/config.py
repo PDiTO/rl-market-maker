@@ -24,7 +24,7 @@ class TrainSettings:
 @dataclass(frozen=True)
 class EvalSettings:
     episodes: int = 500
-    robustness_episodes: int = 150
+    stress_episodes: int = 150
     workers: int = 0
     """0 means one fewer than the number of CPUs."""
     policies: dict[str, str] = field(default_factory=dict)

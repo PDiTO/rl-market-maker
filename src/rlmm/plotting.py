@@ -1,4 +1,4 @@
-"""Figures for the README: learning curves, diagnostics, evaluation and robustness."""
+"""Figures for the README: learning curves, diagnostics, evaluation and stress tests."""
 
 from __future__ import annotations
 
@@ -258,8 +258,8 @@ def pnl_decomposition(summary_csv: Path, path: Path) -> None:
     _save(fig, path)
 
 
-def robustness(robustness_csv: Path, path: Path) -> None:
-    rows = read_csv(robustness_csv)
+def stress(stress_csv: Path, path: Path) -> None:
+    rows = read_csv(stress_csv)
     groups = list(dict.fromkeys(r["group"] for r in rows))
     names = list(dict.fromkeys(r["policy"] for r in rows))
     titles = {

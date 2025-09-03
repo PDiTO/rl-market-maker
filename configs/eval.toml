@@ -1,4 +1,4 @@
-# Held-out evaluation, robustness sweep and figures.
+# Held-out evaluation, stress tests and figures.
 #   rlmm calibrate --config configs/eval.toml
 #   rlmm eval      --config configs/eval.toml
 #   rlmm plot      --config configs/eval.toml
@@ -29,7 +29,7 @@ terminal_liquidation = true
 
 [eval]
 episodes = 500
-robustness_episodes = 150
+stress_episodes = 150
 calibration = "results/calibration.json"
 out_dir = "results"
 latency_ns = [0, 50_000, 1_000_000, 5_000_000, 20_000_000]

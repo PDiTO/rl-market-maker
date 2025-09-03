@@ -38,15 +38,15 @@ def _calibrate(args: argparse.Namespace) -> None:
 
 
 def _eval(args: argparse.Namespace) -> None:
-    from rlmm.evaluation.pipeline import run_main, run_robustness
+    from rlmm.evaluation.pipeline import run_main, run_stress
 
     run = load_config(args.config)
     if args.workers:
         run = replace(run, eval=replace(run.eval, workers=args.workers))
     if not args.skip_main:
         run_main(run)
-    if not args.skip_robustness:
-        run_robustness(run)
+    if not args.skip_stress:
+        run_stress(run)
 
 
 def _plot(args: argparse.Namespace) -> None:
@@ -78,8 +78,8 @@ def _plot(args: argparse.Namespace) -> None:
     if (res / "eval_episodes.csv").exists():
         plotting.pnl_distribution(res / "eval_episodes.csv", fig_dir / "pnl_distribution.png")
         plotting.pnl_decomposition(res / "eval_summary.csv", fig_dir / "pnl_decomposition.png")
-    if (res / "robustness.csv").exists():
-        plotting.robustness(res / "robustness.csv", fig_dir / "robustness.png")
+    if (res / "stress.csv").exists():
+        plotting.stress(res / "stress.csv", fig_dir / "stress.png")
     cal_path = Path(run.eval.calibration)
     if cal_path.exists():
         plotting.calibration_plot(json.loads(cal_path.read_text()), fig_dir / "calibration.png")
@@ -119,11 +119,11 @@ def main(argv: list[str] | None = None) -> None:
     c.add_argument("--episodes", type=int, default=200, help="markets per grid point")
     c.set_defaults(func=_calibrate)
 
-    e = sub.add_parser("eval", help="held-out comparison and robustness sweep")
+    e = sub.add_parser("eval", help="held-out comparison and out-of-regime stress tests")
     e.add_argument("--config", required=True)
     e.add_argument("--workers", type=int, help="processes (default: CPUs - 1)")
     e.add_argument("--skip-main", action="store_true")
-    e.add_argument("--skip-robustness", action="store_true")
+    e.add_argument("--skip-stress", action="store_true")
     e.set_defaults(func=_eval)
 
     pl = sub.add_parser("plot", help="figures from training logs and eval results")
