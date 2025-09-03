@@ -27,14 +27,15 @@ COLORS = {
     "as_stationary": "#1baf7a",
     "avellaneda_stoikov": "#eda100",
     "symmetric": "#e87ba4",
-    "ppo_fix": "#4a3aa7",
+    "microprice_skew": "#008300",
+    "ppo_ablation": "#4a3aa7",
 }
 SEED_STYLES = ("-", "--", ":", "-.")
 
 
 def color_for(name: str) -> str:
-    if name.startswith("ppo_fix") or name.startswith("ppo-fix"):
-        return COLORS["ppo_fix"]
+    if name.startswith("ppo_ablation"):
+        return COLORS["ppo_ablation"]
     if name.startswith("ppo"):
         return COLORS["ppo"]
     return COLORS.get(name, TEXT_2)

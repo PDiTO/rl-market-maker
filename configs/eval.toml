@@ -40,3 +40,6 @@ informed = [0.3, 0.5, 0.7]
 ppo_seed1 = "runs/ppo/seed1/final.pt"
 ppo_seed2 = "runs/ppo/seed2/final.pt"
 ppo_seed3 = "runs/ppo/seed3/final.pt"
+ppo_ablation_seed1 = "runs/ppo_ablation/seed1/final.pt"
+ppo_ablation_seed2 = "runs/ppo_ablation/seed2/final.pt"
+ppo_ablation_seed3 = "runs/ppo_ablation/seed3/final.pt"
