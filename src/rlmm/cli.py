@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from dataclasses import replace
 from pathlib import Path
 
@@ -62,6 +63,11 @@ def _plot(args: argparse.Namespace) -> None:
     fig_dir = res / "figures"
     runs = {name: Path(path).parent for name, path in run.eval.policies.items()}
     metrics = plotting.load_runs([(n, d) for n, d in runs.items() if (d / "metrics.csv").exists()])
+    # Keep a copy of each training log next to the results it produced.
+    for n, d in runs.items():
+        if (d / "metrics.csv").exists():
+            (res / "training").mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(d / "metrics.csv", res / "training" / f"{n}.csv")
     baselines: dict[str, float] = {}
     if (res / "eval_summary.csv").exists():
         for r in plotting.read_csv(res / "eval_summary.csv"):
