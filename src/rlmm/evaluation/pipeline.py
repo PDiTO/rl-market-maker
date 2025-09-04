@@ -12,12 +12,17 @@ import numpy as np
 from rlmm.baselines.calibration import Calibration, baselines_from
 from rlmm.config import RunConfig
 from rlmm.env.config import EnvConfig
+from rlmm.evaluation.metrics import EpisodeMetrics
 from rlmm.evaluation.report import (
     Results,
     main_tables,
     markdown_table,
     paired_difference,
+    paired_group_difference,
+    pooled_name,
+    seed_groups,
     summary_rows,
+    with_pooled,
     write_csv,
     write_episodes_csv,
 )
@@ -93,7 +98,7 @@ def run_main(run: RunConfig, log: bool = True) -> Results:
     jobs = [Job(p.name, p, cfg, seeds) for p, cfg in policies]
     results = run_jobs(jobs, workers=_workers(run))
     out = Path(run.eval.out_dir)
-    rows = summary_rows(results)
+    rows = summary_rows(with_pooled(results))
     write_csv(out / "eval_summary.csv", rows)
     write_episodes_csv(out / "eval_episodes.csv", results)
 
@@ -104,6 +109,17 @@ def run_main(run: RunConfig, log: bool = True) -> Results:
         for b in baselines:
             d = paired_difference(results, a, b)
             paired_rows.append([a, b, f"{d.mean:+.1f}", f"[{d.lo:+.1f}, {d.hi:+.1f}]"])
+    for g, names in seed_groups(agents).items():
+        for b in baselines:
+            d = paired_group_difference(results, names, b)
+            paired_rows.append(
+                [
+                    f"{g}, mean of {len(names)} seeds",
+                    b,
+                    f"{d.mean:+.1f}",
+                    f"[{d.lo:+.1f}, {d.hi:+.1f}]",
+                ]
+            )
     md = [
         f"Evaluated on {len(seeds)} held-out markets, {run.env.horizon_s:g} s each. "
         "PnL in ticks x lots, net of fees and of flattening the final position. "
@@ -133,6 +149,14 @@ def run_stress(run: RunConfig, log: bool = True) -> Results:
             jobs.append(Job(f"{group}|{label}|{p.name}", p, cfg.replace(**overrides), seeds))
     results = run_jobs(jobs, workers=_workers(run))
 
+    by_regime: dict[str, dict[str, list[EpisodeMetrics]]] = {}
+    for key, ms in results.items():
+        group, label, name = key.split("|")
+        by_regime.setdefault(f"{group}|{label}", {})[name] = ms
+    for gl, res in by_regime.items():
+        for name, ms in with_pooled(res).items():
+            results[f"{gl}|{name}"] = ms
+
     rows: list[dict[str, float | str]] = []
     for key, ms in results.items():
         group, label, name = key.split("|")
@@ -159,7 +183,10 @@ def run_stress(run: RunConfig, log: bool = True) -> Results:
     out = Path(run.eval.out_dir)
     write_csv(out / "stress.csv", rows)
 
-    names = [p.name for p, _ in policies]
+    all_names = [p.name for p, _ in policies]
+    groups = seed_groups(all_names)
+    grouped = {n for ns in groups.values() for n in ns}
+    names = [n for n in all_names if n not in grouped] + [pooled_name(g) for g in groups]
     sections = []
     for group in dict.fromkeys(str(r["group"]) for r in rows):
         labels = list(dict.fromkeys(str(r["regime"]) for r in rows if r["group"] == group))
@@ -178,7 +205,8 @@ def run_stress(run: RunConfig, log: bool = True) -> Results:
     md = (
         f"Mean PnL [95% CI] over {len(seeds)} markets per cell. Training conditions are "
         "0.05 ms latency each way, volatility 2, informed share 0.5, random-walk fair "
-        "value.\n\n" + "\n\n".join(sections)
+        "value. Pooled columns combine the training seeds' episodes; per-seed numbers "
+        "are in stress.csv.\n\n" + "\n\n".join(sections)
     )
     (out / "stress.md").write_text(md + "\n")
     if log:

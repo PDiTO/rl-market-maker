@@ -64,6 +64,39 @@ def paired_difference(results: Results, a: str, b: str, field: str = "pnl") -> S
     return summarize([xa[s] - xb[s] for s in common])
 
 
+def seed_groups(names: Sequence[str]) -> dict[str, list[str]]:
+    """Groups ``ppo_seed1``, ``ppo_seed2``, ... under ``ppo``. Only groups of two or
+    more seeds are returned."""
+    groups: dict[str, list[str]] = {}
+    for n in names:
+        if "_seed" in n:
+            groups.setdefault(n.rsplit("_seed", 1)[0], []).append(n)
+    return {g: ns for g, ns in groups.items() if len(ns) > 1}
+
+
+def pooled_name(group: str) -> str:
+    return f"{group} (pooled)"
+
+
+def with_pooled(results: Results) -> Results:
+    """Adds one entry per seed group with every seed's episodes concatenated."""
+    out = dict(results)
+    for g, names in seed_groups(list(results)).items():
+        out[pooled_name(g)] = [m for n in names for m in results[n]]
+    return out
+
+
+def paired_group_difference(
+    results: Results, names: Sequence[str], b: str, field: str = "pnl"
+) -> Summary:
+    """Like :func:`paired_difference`, with ``a`` the mean over several training
+    seeds on each market, so the CI is over markets, not over seed x market."""
+    per_seed = [{m.feed_seed: getattr(m, field) for m in results[n]} for n in names]
+    xb = {m.feed_seed: getattr(m, field) for m in results[b]}
+    common = sorted(set(xb).intersection(*per_seed))
+    return summarize([np.mean([d[s] for d in per_seed]) - xb[s] for s in common])
+
+
 def write_csv(path: str | Path, rows: Sequence[dict[str, float | str]]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

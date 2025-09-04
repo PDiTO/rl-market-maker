@@ -92,7 +92,9 @@ def _plot(args: argparse.Namespace) -> None:
             tr = run_episode(env, policy, s)
             pos_before = np.concatenate([[0], np.asarray(tr.position[:-1])])
             eps.append((pos_before, np.asarray(tr.bid_offset), np.asarray(tr.ask_offset)))
-        traces[policy.name] = eps
+        # Seeds of the same agent are pooled so the figure stays readable.
+        name = policy.name.rsplit("_seed", 1)[0] if "_seed" in policy.name else policy.name
+        traces.setdefault(name, []).extend(eps)
     plotting.inventory_and_behaviour(
         traces,
         fig_dir / "inventory_distribution.png",

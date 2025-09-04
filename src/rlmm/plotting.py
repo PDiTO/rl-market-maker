@@ -29,6 +29,7 @@ COLORS = {
     "symmetric": "#e87ba4",
     "microprice_skew": "#008300",
     "ppo_ablation": "#4a3aa7",
+    "ppo_risk": "#e34948",
 }
 SEED_STYLES = ("-", "--", ":", "-.")
 
@@ -36,6 +37,8 @@ SEED_STYLES = ("-", "--", ":", "-.")
 def color_for(name: str) -> str:
     if name.startswith("ppo_ablation"):
         return COLORS["ppo_ablation"]
+    if name.startswith("ppo_risk"):
+        return COLORS["ppo_risk"]
     if name.startswith("ppo"):
         return COLORS["ppo"]
     return COLORS.get(name, TEXT_2)
@@ -51,7 +54,7 @@ def _style() -> None:
             "axes.labelcolor": TEXT_2,
             "axes.titlecolor": TEXT,
             "axes.titlesize": 11,
-            "axes.titleweight": "medium",
+            "axes.titleweight": "normal",
             "axes.labelsize": 9,
             "axes.grid": True,
             "grid.color": GRID,
@@ -131,11 +134,17 @@ def learning_curves(
                 linestyle=SEED_STYLES[i % len(SEED_STYLES)],
                 label=label,
             )
-        for name, v in baselines.items():
+        # Reference lines, with labels pushed apart so close values stay readable.
+        placed: list[float] = []
+        lo, hi = ax.get_ylim()
+        gap = float(hi - lo) / 22.0
+        for name, v in sorted(baselines.items(), key=lambda kv: kv[1]):
             ax.axhline(v, color=color_for(name), linewidth=1.2, alpha=0.9)
+            label_y = max([float(v), *[p + gap for p in placed]])
+            placed.append(label_y)
             ax.annotate(
                 f"{name} {v:.0f}",
-                xy=(1.0, v),
+                xy=(1.0, label_y),
                 xycoords=("axes fraction", "data"),
                 xytext=(4, 0),
                 textcoords="offset points",
@@ -259,7 +268,7 @@ def pnl_decomposition(summary_csv: Path, path: Path) -> None:
 
 
 def stress(stress_csv: Path, path: Path) -> None:
-    rows = read_csv(stress_csv)
+    rows = [r for r in read_csv(stress_csv) if "_seed" not in r["policy"]]
     groups = list(dict.fromkeys(r["group"] for r in rows))
     names = list(dict.fromkeys(r["policy"] for r in rows))
     titles = {
@@ -293,7 +302,6 @@ def stress(stress_csv: Path, path: Path) -> None:
                 linewidth=1.5,
                 capsize=0,
                 label=n,
-                linestyle=SEED_STYLES[i % len(SEED_STYLES)] if n.startswith("ppo") else "-",
             )
         ax.set_xticks(x, labels)
         ax.axhline(0, color=TEXT_2, linewidth=0.8)
