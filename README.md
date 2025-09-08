@@ -1,4 +1,6 @@
-<!-- logo -->
+<p align="center">
+  <img src="docs/logo.png" alt="rl-market-maker logo" width="200">
+</p>
 
 # rl-market-maker
 
