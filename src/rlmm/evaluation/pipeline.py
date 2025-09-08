@@ -81,15 +81,15 @@ def _workers(run: RunConfig) -> int | None:
     return run.eval.workers or None
 
 
-def _seed_spread(results: Results, prefix: str = "ppo") -> str:
-    names = [n for n in results if n.startswith(prefix)]
-    if len(names) < 2:
-        return ""
-    means = [float(np.mean([m.pnl for m in results[n]])) for n in names]
-    return (
-        f"Across the {len(names)} training seeds, mean PnL per seed is "
-        f"{np.mean(means):.1f} with a between-seed sd of {np.std(means, ddof=1):.1f}."
-    )
+def _seed_spread(results: Results) -> str:
+    lines = []
+    for g, names in seed_groups(list(results)).items():
+        means = [float(np.mean([m.pnl for m in results[n]])) for n in names]
+        lines.append(
+            f"- {g}: per-seed mean PnL {', '.join(f'{m:.1f}' for m in means)}; "
+            f"between-seed sd {np.std(means, ddof=1):.1f}"
+        )
+    return "Spread across training seeds:\n\n" + "\n".join(lines) if lines else ""
 
 
 def run_main(run: RunConfig, log: bool = True) -> Results:

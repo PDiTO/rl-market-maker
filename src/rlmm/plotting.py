@@ -198,8 +198,18 @@ def _episodes(path: Path) -> dict[str, dict[str, np.ndarray]]:
     return {p: {k: np.asarray(v) for k, v in d.items()} for p, d in out.items()}
 
 
+def _pool_episodes(eps: dict[str, dict[str, np.ndarray]]) -> dict[str, dict[str, np.ndarray]]:
+    """Concatenates ``name_seedN`` entries under ``name``."""
+    out: dict[str, dict[str, list[np.ndarray]]] = {}
+    for n, d in eps.items():
+        g = n.rsplit("_seed", 1)[0] if "_seed" in n else n
+        for k, v in d.items():
+            out.setdefault(g, {}).setdefault(k, []).append(v)
+    return {g: {k: np.concatenate(v) for k, v in d.items()} for g, d in out.items()}
+
+
 def pnl_distribution(episodes_csv: Path, path: Path) -> None:
-    eps = _episodes(episodes_csv)
+    eps = _pool_episodes(_episodes(episodes_csv))
     names = list(eps)
     _style()
     fig, ax = plt.subplots(figsize=(9, 0.55 * len(names) + 1.5))
@@ -232,13 +242,13 @@ def pnl_distribution(episodes_csv: Path, path: Path) -> None:
     ax.invert_yaxis()
     ax.axvline(0, color=TEXT_2, linewidth=0.8)
     ax.set_xlabel("episode PnL (ticks x lots); box = quartiles, whiskers = 1.5 IQR, dot = mean")
-    ax.set_title("PnL per held-out episode", loc="left")
+    ax.set_title("PnL per held-out episode (PPO rows pool three training seeds)", loc="left")
     fig.tight_layout()
     _save(fig, path)
 
 
 def pnl_decomposition(summary_csv: Path, path: Path) -> None:
-    rows = read_csv(summary_csv)
+    rows = [r for r in read_csv(summary_csv) if "_seed" not in r["policy"]]
     names = [r["policy"] for r in rows]
     parts = (
         ("spread_capture_mean", "spread capture", "#2a78d6"),
@@ -262,7 +272,7 @@ def pnl_decomposition(summary_csv: Path, path: Path) -> None:
     ax.axvline(0, color=TEXT_2, linewidth=0.8)
     ax.set_xlabel("mean per episode (ticks x lots)")
     ax.set_title("Where the PnL comes from", loc="left")
-    ax.legend(loc="lower right", ncols=5, bbox_to_anchor=(1.0, 1.0))
+    ax.legend(loc="upper center", ncols=5, bbox_to_anchor=(0.5, -0.12))
     fig.tight_layout()
     _save(fig, path)
 
@@ -401,7 +411,7 @@ def calibration_plot(cal: dict[str, object], path: Path) -> None:
         markeredgewidth=2,
         label="probe quotes",
     )
-    xs = np.linspace(d.min() - 0.1, d.max() + 0.1, 50)
+    xs = np.linspace(d[ok].min() - 0.1, d[ok].max() + 0.3, 50)
     ax.semilogy(
         xs, A * np.exp(-k * xs), color=COLORS["linear_skew"], label=f"fit: {A:.2f} exp(-{k:.2f} d)"
     )
